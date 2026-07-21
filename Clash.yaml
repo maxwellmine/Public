@@ -1,0 +1,28 @@
+pg: &pg {type: select, proxies: [节点选择, 香港节点, 新加坡节点]}
+url-test: &url-test {type: url-test, url: https://www.gstatic.com/generate_204, interval: 1800, tolerance: 10, include-all: true}
+select: &select {type: select, include-all: true}
+fallback: &fallback {type: fallback, url: https://www.gstatic.com/generate_204, interval: 1800, include-all: true}
+load-balance: &load-balance {type: load-balance, strategy: consistent-hashing, url: https://www.gstatic.com/generate_204, interval: 1800, include-all: true}
+c: &c {type: http, behavior: classical, format: text, interval: 86400}
+
+proxy-groups:
+  - {name: 节点选择, type: select,include-all: true, proxies: [香港节点, 新加坡节点]}
+  - {name: 最终分流, <<: *pg}
+  - {name: 香港节点, <<: *url-test, hidden: true, filter: "(?i)🇭🇰|香港|(\b(HK|Hong)\b)"}
+  - {name: 新加坡节点, <<: *url-test,hidden: true,  filter: "(?i)🇸🇬|新加坡|狮|(\b(SG|Singapore)\b)"}
+
+rule-providers:
+  Direct: {<<: *c, url: https://github.com/Repcz/Tool/raw/X/mihomo/Rules/Direct.list}
+  Lan: {<<: *c, url: https://github.com/Repcz/Tool/raw/X/mihomo/Rules/Lan.list}
+  AppleCN: {<<: *c, url: https://github.com/Repcz/Tool/raw/X/mihomo/Rules/AppleCN.list}
+  AppleProxy: {<<: *c, url: https://github.com/Repcz/Tool/raw/X/mihomo/Rules/AppleServers.list}
+  Telegram: {<<: *c, url: https://github.com/Repcz/Tool/raw/X/mihomo/Rules/Telegram.list}
+
+rules:
+  - RULE-SET,Direct,DIRECT
+  - RULE-SET,Telegram,新加坡节点
+  - RULE-SET,AppleCN,DIRECT
+  - RULE-SET,AppleProxy,DIRECT
+  - RULE-SET,Lan,DIRECT
+  - GEOIP,CN,DIRECT
+  - MATCH,最终分流
